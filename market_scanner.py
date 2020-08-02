@@ -2,14 +2,19 @@ import os
 import time
 import yfinance as yf
 import dateutil.relativedelta
-from datetime import date
-import datetime
+from datetime import date ,datetime
+#import datetime
 import numpy as np
 import sys
 from stocklist import NasdaqController
 from tqdm import tqdm
 from joblib import Parallel, delayed, parallel_backend
 import multiprocessing
+
+from colorama import init
+init(strip=not sys.stdout.isatty()) # strip colors if stdout is redirected
+from termcolor import cprint 
+from pyfiglet import figlet_format
 
 ###########################
 # THIS IS THE MAIN SCRIPT #
@@ -28,7 +33,7 @@ class mainObj:
 
     def getData(self, ticker):
         global MONTH_CUTOFF
-        currentDate = datetime.datetime.strptime(
+        currentDate = datetime.strptime(
             date.today().strftime("%Y-%m-%d"), "%Y-%m-%d")
         pastDate = currentDate - \
             dateutil.relativedelta.relativedelta(months=MONTH_CUTTOFF)
@@ -64,11 +69,15 @@ class mainObj:
         print("*********************\n\n\n")
 
     def days_between(self, d1, d2):
-        d1 = datetime.datetime.strptime(d1, "%Y-%m-%d")
-        d2 = datetime.datetime.strptime(d2, "%Y-%m-%d")
+        d1 = datetime.strptime(d1, "%Y-%m-%d")
+        d2 = datetime.strptime(d2, "%Y-%m-%d")
         return abs((d2 - d1).days)
 
-    def parallel_wrapper(self, x, currentDate, positive_scans):
+    def print_title(self):
+        cprint(figlet_format('Unusual Volume Detector', font='slant'), 'cyan', attrs=['bold'])
+
+
+    def parallel_wrapper(self, x, currentDate, positive_scans, results):
         global DAY_CUTTOFF
         d = (self.find_anomalies(self.getData(x)))
         if d['Dates']:
@@ -82,24 +91,39 @@ class mainObj:
                         '{:,.2f}'.format(d['Volume'][0]))[:-3]
                     positive_scans.append(stonk)
 
+                    ######
+                    results.append(x)
+                    ######
+
     def main_func(self):
         StocksController = NasdaqController(True)
         list_of_tickers = StocksController.getList()
-        currentDate = datetime.datetime.strptime(
+        currentDate = datetime.strptime(
             date.today().strftime("%Y-%m-%d"), "%Y-%m-%d")
         start_time = time.time()
+        self.print_title()
 
         manager = multiprocessing.Manager()
         positive_scans = manager.list()
+        results = manager.list()
 
         with parallel_backend('loky', n_jobs=multiprocessing.cpu_count()):
-            Parallel()(delayed(self.parallel_wrapper)(x, currentDate, positive_scans)
+            Parallel()(delayed(self.parallel_wrapper)(x, currentDate, positive_scans, results)
                        for x in tqdm(list_of_tickers))
 
         print("\n\n\n\n--- this took %s seconds to run ---" %
               (time.time() - start_time))
 
+        
+        ######
+        f = open('results_{}.txt'.format(datetime.date(datetime.now())), 'w')
+        for ticker in results:
+            f.write(ticker + '\n')
+        f.close()
+        ######
+
         return positive_scans
+
 
 
 if __name__ == '__main__':
