@@ -116,7 +116,7 @@ class mainObj:
 
         
         ######
-        f = open('results_{}.txt'.format(datetime.date(datetime.now())), 'w')
+        f = open('/results/results_{}.txt'.format(datetime.date(datetime.now())), 'w')
         for ticker in results:
             f.write(ticker + '\n')
         f.close()

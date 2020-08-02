@@ -19,9 +19,7 @@ def closePrice(ticker):
 	closePrice = round(np.mean(getData(ticker)['Close']), 2)
 	return closePrice
 
-# print(closePrice("WKHS"))
-
-def writeToXls(day, filename):
+def writeToXls(day):
 	with open(filename , "r") as f:
 		tickers = f.read().splitlines()
 
@@ -29,7 +27,7 @@ def writeToXls(day, filename):
 		wb = Workbook()
 		sheet1 = wb.add_sheet("Sheet 1")
 	else: 
-		wb = copy(open_workbook('priceTracker.xls'))
+		wb = copy(open_workbook('excelSheets/priceTracker_{}.xls'.format(initialDate)))
 		sheet1 = wb.get_sheet(0)
 
 	for i,ticker in enumerate(tickers):
@@ -38,20 +36,32 @@ def writeToXls(day, filename):
 		sheet1.write(i, day+1, float(closePrice(ticker)))
 
 	f.close()
-	wb.save('priceTracker.xls')
+	wb.save('excelSheets/priceTracker_{}.xls'.format(initialDate))
+
+def mainFunc():
+	global initialDate 
+	global filename
+
+	results_files = glob('results/results*.txt')
+	currentDate = datetime.date(datetime.now())
+
+	for filename in results_files:
+		file_date = filename[-14:-4].split('-') 
+		initialDate = date(int(file_date[0]), int(file_date[1]), int(file_date[2]))
+
+		delta = currentDate - initialDate
+		writeToXls(delta.days)
+
+mainFunc()
 
 
-#writeToXls(1)
+# filename = results_file[0]
+# file_date = filename[-14:-4].split('-')
+# initialDate = date(int(file_date[0]), int(file_date[1]), int(file_date[2]))
 
-results_file = glob('results*.txt')
-filename = results_file[0]
-file_date = filename[-14:-4].split('-')
-print(file_date)
-initialDate = date(int(file_date[0]), int(file_date[1]), int(file_date[2]))
-
-currentDate = datetime.date(datetime.now())
-delta = currentDate - initialDate
-writeToXls(delta.days, filename)
+# currentDate = datetime.date(datetime.now())
+# delta = currentDate - initialDate
+# writeToXls(delta.days, filename)
 
 # firstDay = input("First day? [y/N]: ")
 # if firstDay.lower() == 'y':
